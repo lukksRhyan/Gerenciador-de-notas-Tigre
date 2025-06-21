@@ -19,7 +19,7 @@ class ExcelGenerator {
     sheet.appendRow([TextCellValue("Número da Nota"), TextCellValue(nota.numeroNota)]);
     sheet.appendRow([TextCellValue("CFOP"), TextCellValue(nota.cfop)]);
     sheet.appendRow([TextCellValue("Total"), TextCellValue("R\$${nota.total.toStringAsFixed(2)}")]);
-    sheet.appendRow([TextCellValue("Informações Adicionais"), TextCellValue(nota.informacoesAdicionais)]);
+    sheet.appendRow([]);
     sheet.appendRow([]); // Linha em branco
 
     // Cabeçalho dos produtos
@@ -57,7 +57,7 @@ class ExcelGenerator {
         childSheet.appendRow([TextCellValue("Número da Nota"), TextCellValue(notaFilha.numeroNota)]);
         childSheet.appendRow([TextCellValue("CFOP"), TextCellValue(notaFilha.cfop)]);
         childSheet.appendRow([TextCellValue("Total"), TextCellValue("R\$${notaFilha.total.toStringAsFixed(2)}")]);
-        childSheet.appendRow([TextCellValue("Informações Adicionais"), TextCellValue(notaFilha.informacoesAdicionais)]);
+        childSheet.appendRow([]);
         childSheet.appendRow([]);
 
         childSheet.appendRow([
@@ -76,9 +76,9 @@ class ExcelGenerator {
             DoubleCellValue(produto.quantidade),
             TextCellValue(produto.unidade),
             DoubleCellValue(produto.valorUnitario),
-            FormulaCellValue("C${currentChildRow}*E${currentChildRow}"),
-            FormulaCellValue("F${currentChildRow}*0.2732"),
-            FormulaCellValue("G${currentChildRow}*0.205"),
+            FormulaCellValue("=C${currentChildRow}*E${currentChildRow}"),
+            FormulaCellValue("=F${currentChildRow}*0.2732"),
+            FormulaCellValue("=G${currentChildRow}*0.205"),
           ]);
         }
         _adjustColumnWidths(childSheet);

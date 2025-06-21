@@ -6,10 +6,11 @@ import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
 import 'dart:io';
-import 'dart:convert'; // Para jsonEncode
-import 'package:notas_tigre/utils/xml_parser.dart'; // Novo import
-import 'package:notas_tigre/utils/excel_generator.dart'; // Novo import
-import 'package:notas_tigre/utils/icms_calculator.dart'; // Novo import
+import 'dart:convert';
+import 'package:notas_tigre/utils/xml_parser.dart';
+import 'package:notas_tigre/utils/excel_generator.dart';
+import 'package:notas_tigre/utils/icms_calculator.dart';
+import 'package:notas_tigre/widgets/product_value_input_dialog.dart'; // NOVO IMPORT
 
 void main() {
   runApp(const MyApp());
@@ -41,23 +42,23 @@ class GerenciadorNotasPage extends StatefulWidget {
 
 class _GerenciadorNotasPageState extends State<GerenciadorNotasPage> {
   final TextEditingController _noteNumberController = TextEditingController();
-  List<Nota> _notes = []; // Agora armazena objetos Nota completos
+  List<Nota> _notes = [];
   bool _isLoading = false;
   String _message = '';
 
   @override
   void initState() {
     super.initState();
-    // No backend, aqui carregaríamos do DB. Sem backend, começamos vazio ou de um cache local.
-    // Para esta versão, as notas são gerenciadas em memória durante a execução do app.
+    // Em uma aplicação sem backend e sem persistência local (e.g., Hive),
+    // a lista de notas é mantida em memória e será esvaziada ao fechar o app.
+    // Para iniciar, pode-se considerar carregar de um arquivo local se persistência for necessária.
+    // Por enquanto, a lista inicia vazia.
   }
 
-  // A listagem agora apenas mostra as notas que foram adicionadas à lista em memória
   Future<void> _listNotes() async {
     setState(() {
       _isLoading = true;
       _message = 'Listando notas carregadas...';
-      // _notes = []; // Não limpa se queremos ver as que já foram adicionadas
     });
     if (_notes.isEmpty) {
       _message = 'Nenhuma nota carregada ainda. Adicione uma nota.';
@@ -79,17 +80,83 @@ class _GerenciadorNotasPageState extends State<GerenciadorNotasPage> {
       File file = File(result.files.single.path!);
       setState(() {
         _isLoading = true;
-        _message = 'Processando arquivo XML...';
+        _message = 'Lendo arquivo XML...';
       });
+
       try {
         final xmlContent = await file.readAsString();
-        // A função processar_e_salvar_nota agora opera na lista em memória
-        final processedNota = await XmlParser.processAndSaveNote(xmlContent, _notes);
+        // Extrai os dados brutos da nota do XML
+        final Map<String, dynamic> rawNoteData = XmlParser.extractNoteData(xmlContent);
+
+        final String cfop = rawNoteData['CFOP'] as String;
+
+        // SE FOR NOTA MÃE (CFOP 5922), PERGUNTA SOBRE VALORES UNITÁRIOS
+        List<Produto> productsWithValues = (rawNoteData['Produtos'] as List)
+            .map((p) => Produto.fromJson(p)).toList(); // Converte para lista de Produtos
+
+        if (cfop == "5922") {
+          final bool? manualInput = await showDialog<bool>(
+            context: context,
+            barrierDismissible: false, // Força o usuário a escolher uma opção
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: const Text("Valores Unitários dos Produtos"),
+                content: const Text("Deseja inserir os valores unitários dos produtos manualmente?"),
+                actions: <Widget>[
+                  TextButton(
+                    child: const Text("Deixar Zerado"),
+                    onPressed: () {
+                      Navigator.of(context).pop(false); // Retorna false para zerado
+                    },
+                  ),
+                  TextButton(
+                    child: const Text("Inserir Manualmente"),
+                    onPressed: () {
+                      Navigator.of(context).pop(true); // Retorna true para manual
+                    },
+                  ),
+                ],
+              );
+            },
+          );
+
+          if (manualInput == true) {
+            // Se o usuário escolheu inserir manualmente, itera sobre os produtos
+            for (int i = 0; i < productsWithValues.length; i++) {
+              Produto product = productsWithValues[i];
+              setState(() {
+                _message = 'Inserindo valor para: ${product.descricao} (${product.codigo})...';
+              });
+              final double? value = await showDialog<double>(
+                context: context,
+                barrierDismissible: false,
+                builder: (BuildContext context) {
+                  return ProductValueInputDialog(
+                    productCode: product.codigo,
+                    productDescription: product.descricao,
+                  );
+                },
+              );
+
+              if (value != null) {
+                productsWithValues[i] = product.copyWith(valorUnitario: value);
+              } else {
+                // Se o usuário cancelar, pode-se optar por manter o valor 0 ou parar
+                productsWithValues[i] = product.copyWith(valorUnitario: 0.0);
+              }
+            }
+          }
+          // Se manualInput for false ou null, os valores de productsWithValues (valorUnitario) já são 0.0 por padrão.
+        }
+
+        // Agora, use XmlParser para processar e adicionar a nota à lista em memória,
+        // passando os produtos já com os valores unitários definidos.
+        final processedNota = XmlParser.addNotaToNotesList(rawNoteData, productsWithValues, _notes);
 
         setState(() {
           _message = 'Nota ${processedNota.numeroNota} processada e adicionada com sucesso!';
         });
-        _listNotes(); // Atualiza a lista (embora não recarregue do disco)
+        _listNotes();
       } catch (e) {
         setState(() {
           _message = 'Erro ao processar o arquivo XML: $e';
@@ -120,7 +187,6 @@ class _GerenciadorNotasPageState extends State<GerenciadorNotasPage> {
       _message = 'Consultando nota $numeroNota...';
     });
     try {
-      // Busca a nota na lista em memória
       final Nota? nota = _notes.firstWhere(
         (n) => n.numeroNota == numeroNota,
         orElse: () => throw Exception('Nota $numeroNota não encontrada.'),
@@ -202,7 +268,7 @@ class _GerenciadorNotasPageState extends State<GerenciadorNotasPage> {
               _message = 'Calculando ICMS...';
             });
             try {
-              final result = IcmsCalculator.calculateIcms(value); // Chamada local
+              final result = IcmsCalculator.calculateIcms(value);
               setState(() {
                 _message = 'ICMS Calculado: R\$ ${result.toStringAsFixed(2)}';
               });
@@ -242,7 +308,7 @@ class _GerenciadorNotasPageState extends State<GerenciadorNotasPage> {
                 child: ElevatedButton.icon(
                   onPressed: _listNotes,
                   icon: const Icon(Icons.folder_open),
-                  label: const Text("Listar Notas Carregadas"), // Texto atualizado
+                  label: const Text("Listar Notas Carregadas"),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 15),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -255,7 +321,7 @@ class _GerenciadorNotasPageState extends State<GerenciadorNotasPage> {
                 child: ElevatedButton.icon(
                   onPressed: _addNote,
                   icon: const Icon(Icons.add_circle),
-                  label: const Text("Adicionar Nota (XML)"), // Texto atualizado
+                  label: const Text("Adicionar Nota (XML)"),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 15),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),

@@ -1,12 +1,13 @@
-import 'dart:convert'; // Para jsonDecode
+import 'dart:convert';
 import 'package:intl/intl.dart';
+
 // Classe para representar um produto dentro de uma nota
 class Produto {
   final String codigo;
   final String descricao;
   final double quantidade;
   final String unidade;
-  final double valorUnitario; // Adicionado para manter a consistência com Excel
+  final double valorUnitario;
 
   Produto({
     required this.codigo,
@@ -37,6 +38,23 @@ class Produto {
       'Valor Unitário': valorUnitario,
     };
   }
+
+  // NOVO: Método copyWith para criar uma nova instância com valores atualizados
+  Produto copyWith({
+    String? codigo,
+    String? descricao,
+    double? quantidade,
+    String? unidade,
+    double? valorUnitario,
+  }) {
+    return Produto(
+      codigo: codigo ?? this.codigo,
+      descricao: descricao ?? this.descricao,
+      quantidade: quantidade ?? this.quantidade,
+      unidade: unidade ?? this.unidade,
+      valorUnitario: valorUnitario ?? this.valorUnitario,
+    );
+  }
 }
 
 // Classe principal para representar uma Nota Fiscal
@@ -45,10 +63,10 @@ class Nota {
   final String cfop;
   final double total;
   final String informacoesAdicionais;
-  final List<Produto> produtos; // Produtos da nota principal
-  final List<Produto> produtosRestantes; // Para notas mãe
-  final List<Nota> notasFilhas; // Para notas mãe
-  final String? notaMaeNumero; // Para notas filhas
+  final List<Produto> produtos;
+  final List<Produto> produtosRestantes;
+  final List<Nota> notasFilhas;
+  final String? notaMaeNumero;
 
   Nota({
     required this.numeroNota,
@@ -71,6 +89,8 @@ class Nota {
     }
 
     var produtosRestantesList = <Produto>[];
+    // products_restantes no JSON pode ser uma string se vier do raw_json_data do backend (não mais usado aqui)
+    // ou uma lista de mapas se for diretamente do XML_parser.dart
     if (json['produtos_restantes'] is List) {
       produtosRestantesList = (json['produtos_restantes'] as List)
           .map((i) => Produto.fromJson(i as Map<String, dynamic>))
@@ -80,7 +100,7 @@ class Nota {
     var notasFilhasList = <Nota>[];
     if (json['notas_filhas'] is List) {
       notasFilhasList = (json['notas_filhas'] as List)
-          .map((i) => Nota.fromJson(i as Map<String, dynamic>)) // Recursivo
+          .map((i) => Nota.fromJson(i as Map<String, dynamic>))
           .toList();
     }
 
@@ -92,7 +112,7 @@ class Nota {
       produtos: produtosList,
       produtosRestantes: produtosRestantesList,
       notasFilhas: notasFilhasList,
-      notaMaeNumero: json['Nota Mae Numero']?.toString(), // Campo para referência
+      notaMaeNumero: json['Nota Mae Numero']?.toString(),
     );
   }
 
