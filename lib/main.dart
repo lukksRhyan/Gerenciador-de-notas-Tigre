@@ -268,9 +268,10 @@ class _GerenciadorNotasPageState extends State<GerenciadorNotasPage> {
               _message = 'Calculando ICMS...';
             });
             try {
-              final result = IcmsCalculator.calculateIcms(value);
+              final results = IcmsCalculator.calculateBaseICMS(value);
+
               setState(() {
-                _message = 'ICMS Calculado: R\$ ${result.toStringAsFixed(2)}';
+                _message = 'Base de cálculo: R\$ ${results['base'].toStringAsFixed(2)} \nICMS Calculado: R\$ ${results['ICMS'].toStringAsFixed(2)}';
               });
             } catch (e) {
               setState(() {

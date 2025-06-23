@@ -42,7 +42,7 @@ class NoteDetailDialog extends StatelessWidget {
                   )),
             if (nota.produtos.isEmpty)
               const Text("  Nenhum produto associado diretamente a esta nota."),
-            
+
             // Exibir produtos restantes apenas se for nota mãe e tiver produtos restantes
             if (nota.cfop == "5922" && nota.produtosRestantes.isNotEmpty)
               Column(
@@ -62,7 +62,7 @@ class NoteDetailDialog extends StatelessWidget {
                   )),
                 ],
               ),
-            
+
             // Exibir notas filhas apenas se for nota mãe
             if (nota.cfop == "5922" && nota.notasFilhas.isNotEmpty)
               Column(
@@ -100,6 +100,10 @@ class NoteDetailDialog extends StatelessWidget {
           icon: const Icon(Icons.download),
           label: const Text('Exportar Excel'),
         ),
+        ElevatedButton(onPressed: (){
+
+        }, child: const Text('Exportar dados...'))
+
       ],
     );
   }

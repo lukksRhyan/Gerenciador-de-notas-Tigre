@@ -1,6 +1,9 @@
 class IcmsCalculator {
-  static double calculateIcms(double productValue) {
-    // Simulação de cálculo de ICMS (18% para exemplo)
-    return productValue * 0.205;
+
+  static Map calculateBaseICMS(double productValue){
+      Map results = {};
+      results['base'] = productValue*0.2732;
+      results['ICMS'] = results['base'] * 0.205;
+      return results;
   }
 }
