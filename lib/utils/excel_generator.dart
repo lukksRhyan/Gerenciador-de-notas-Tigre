@@ -1,10 +1,10 @@
 // lib/utils/excel_generator.dart
-import 'dart:typed_data';
 import 'package:excel/excel.dart'; // Importa o pacote Excel
 import 'package:notas_tigre/models/nota.dart'; // Importa o modelo Nota
 
 class ExcelGenerator {
   static Future<List<int>> generateExcelData(Nota nota) async {
+
     var excel = Excel.createExcel();
 
     // ===== PLANILHA NOTA PRINCIPAL (Mãe ou Filha) =====
@@ -13,7 +13,7 @@ class ExcelGenerator {
     Sheet sheet = excel[sheetTitle]!; // Use ! para assumir que a sheet existe ou que será criada
     excel.setDefaultSheet(sheetTitle); // Define como a primeira folha visível
 
-    sheet.appendRow([TextCellValue("SGNT - Criado por Lucas Rhyan")]);
+    sheet.appendRow([TextCellValue("Gerenciador de notas Tigre - Criado por Lucas Rhyan")]);
     sheet.appendRow([]); // Linha em branco
 
     sheet.appendRow([TextCellValue("Número da Nota"), TextCellValue(nota.numeroNota)]);

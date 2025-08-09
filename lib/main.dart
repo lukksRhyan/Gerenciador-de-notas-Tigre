@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:notas_tigre/common/app_colors.dart';
+import 'package:notas_tigre/common/styles/app_styles.dart';
 import 'package:notas_tigre/models/nota.dart';
+import 'package:notas_tigre/widgets/credit_footer.dart';
 import 'package:notas_tigre/widgets/icms_calculator_dialog.dart';
 import 'package:notas_tigre/widgets/note_detail_dialog.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
 import 'dart:io';
-import 'dart:convert';
 import 'package:notas_tigre/utils/xml_parser.dart';
 import 'package:notas_tigre/utils/excel_generator.dart';
 import 'package:notas_tigre/utils/icms_calculator.dart';
@@ -49,10 +51,7 @@ class _GerenciadorNotasPageState extends State<GerenciadorNotasPage> {
   @override
   void initState() {
     super.initState();
-    // Em uma aplicação sem backend e sem persistência local (e.g., Hive),
-    // a lista de notas é mantida em memória e será esvaziada ao fechar o app.
-    // Para iniciar, pode-se considerar carregar de um arquivo local se persistência for necessária.
-    // Por enquanto, a lista inicia vazia.
+
   }
 
   Future<void> _listNotes() async {
@@ -70,108 +69,113 @@ class _GerenciadorNotasPageState extends State<GerenciadorNotasPage> {
     });
   }
 
-  Future<void> _addNote() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['xml'],
-    );
+ Future<void> _addNote() async {
+  FilePickerResult? result = await FilePicker.platform.pickFiles(
+    type: FileType.custom,
+    allowedExtensions: ['xml'],
+  );
 
-    if (result != null && result.files.single.path != null) {
-      File file = File(result.files.single.path!);
-      setState(() {
-        _isLoading = true;
-        _message = 'Lendo arquivo XML...';
-      });
+  if (result != null && result.files.single.path != null) {
+    File file = File(result.files.single.path!);
+    setState(() {
+      _isLoading = true;
+      _message = 'Lendo arquivo XML...';
+    });
 
-      try {
-        final xmlContent = await file.readAsString();
-        // Extrai os dados brutos da nota do XML
-        final Map<String, dynamic> rawNoteData = XmlParser.extractNoteData(xmlContent);
+    try {
+      final xmlContent = await file.readAsString();
+      // Extrai os dados brutos da nota do XML
+      final Map<String, dynamic> rawNoteData = XmlParser.extractNoteData(xmlContent);
 
-        final String cfop = rawNoteData['CFOP'] as String;
+      // CORREÇÃO: Trata a possibilidade de o CFOP ser null de forma segura
+      final String cfop = rawNoteData['CFOP'] as String? ?? '';
 
-        // SE FOR NOTA MÃE (CFOP 5922), PERGUNTA SOBRE VALORES UNITÁRIOS
-        List<Produto> productsWithValues = (rawNoteData['Produtos'] as List)
-            .map((p) => Produto.fromJson(p)).toList(); // Converte para lista de Produtos
+      // Se o CFOP for vazio, não prossegue
+      if (cfop.isEmpty) {
+        throw Exception('CFOP não encontrado no arquivo XML.');
+      }
 
-        if (cfop == "5922") {
-          final bool? manualInput = await showDialog<bool>(
-            context: context,
-            barrierDismissible: false, // Força o usuário a escolher uma opção
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: const Text("Valores Unitários dos Produtos"),
-                content: const Text("Deseja inserir os valores unitários dos produtos manualmente?"),
-                actions: <Widget>[
-                  TextButton(
-                    child: const Text("Deixar Zerado"),
-                    onPressed: () {
-                      Navigator.of(context).pop(false); // Retorna false para zerado
-                    },
-                  ),
-                  TextButton(
-                    child: const Text("Inserir Manualmente"),
-                    onPressed: () {
-                      Navigator.of(context).pop(true); // Retorna true para manual
-                    },
-                  ),
-                ],
-              );
-            },
-          );
+      // SE FOR NOTA MÃE (CFOP 5922), PERGUNTA SOBRE VALORES UNITÁRIOS
+      List<Produto> productsWithValues = (rawNoteData['Produtos'] as List)
+          .map((p) => Produto.fromJson(p)).toList(); // Converte para lista de Produtos
 
-          if (manualInput == true) {
-            // Se o usuário escolheu inserir manualmente, itera sobre os produtos
-            for (int i = 0; i < productsWithValues.length; i++) {
-              Produto product = productsWithValues[i];
-              setState(() {
-                _message = 'Inserindo valor para: ${product.descricao} (${product.codigo})...';
-              });
-              final double? value = await showDialog<double>(
-                context: context,
-                barrierDismissible: false,
-                builder: (BuildContext context) {
-                  return ProductValueInputDialog(
-                    productCode: product.codigo,
-                    productDescription: product.descricao,
-                  );
-                },
-              );
+      if (cfop == "5922") {
+        final bool? manualInput = await showDialog<bool>(
+          context: context,
+          barrierDismissible: false, // Força o usuário a escolher uma opção
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text("Valores Unitários dos Produtos"),
+              content: const Text("Deseja inserir os valores unitários dos produtos manualmente?"),
+              actions: <Widget>[
+                TextButton(
+                  child: const Text("Deixar Zerado"),
+                  onPressed: () {
+                    Navigator.of(context).pop(false); // Retorna false para zerado
+                  },
+                ),
+                TextButton(
+                  child: const Text("Inserir Manualmente"),
+                  onPressed: () {
+                    Navigator.of(context).pop(true); // Retorna true para manual
+                  },
+                ),
+              ],
+            );
+          },
+        );
 
-              if (value != null) {
-                productsWithValues[i] = product.copyWith(valorUnitario: value);
-              } else {
-                // Se o usuário cancelar, pode-se optar por manter o valor 0 ou parar
-                productsWithValues[i] = product.copyWith(valorUnitario: 0.0);
-              }
+        if (manualInput == true) {
+          // Se o usuário escolheu inserir manualmente, itera sobre os produtos
+          for (int i = 0; i < productsWithValues.length; i++) {
+            Produto product = productsWithValues[i];
+            setState(() {
+              _message = 'Inserindo valor para: ${product.descricao} (${product.codigo})...';
+            });
+            final double? value = await showDialog<double>(
+              context: context,
+              barrierDismissible: false,
+              builder: (BuildContext context) {
+                return ProductValueInputDialog(
+                  productCode: product.codigo,
+                  productDescription: product.descricao,
+                );
+              },
+            );
+
+            if (value != null) {
+              productsWithValues[i] = product.copyWith(valorUnitario: value);
+            } else {
+              // Se o usuário cancelar, pode-se optar por manter o valor 0 ou parar
+              productsWithValues[i] = product.copyWith(valorUnitario: 0.0);
             }
           }
-          // Se manualInput for false ou null, os valores de productsWithValues (valorUnitario) já são 0.0 por padrão.
         }
-
-        // Agora, use XmlParser para processar e adicionar a nota à lista em memória,
-        // passando os produtos já com os valores unitários definidos.
-        final processedNota = XmlParser.addNotaToNotesList(rawNoteData, productsWithValues, _notes);
-
-        setState(() {
-          _message = 'Nota ${processedNota.numeroNota} processada e adicionada com sucesso!';
-        });
-        _listNotes();
-      } catch (e) {
-        setState(() {
-          _message = 'Erro ao processar o arquivo XML: $e';
-        });
-      } finally {
-        setState(() {
-          _isLoading = false;
-        });
       }
-    } else {
+
+      // Agora, use XmlParser para processar e adicionar a nota à lista em memória,
+      // passando os produtos já com os valores unitários definidos.
+      final processedNota = XmlParser.addNotaToNotesList(rawNoteData, productsWithValues, _notes);
+
       setState(() {
-        _message = 'Nenhum arquivo XML selecionado.';
+        _message = 'Nota ${processedNota.numeroNota} processada e adicionada com sucesso!';
+      });
+      _listNotes();
+    } catch (e) {
+      setState(() {
+        _message = 'Erro ao processar o arquivo XML: $e';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
       });
     }
+  } else {
+    setState(() {
+      _message = 'Nenhum arquivo XML selecionado.';
+    });
   }
+}
 
   Future<void> _consultNote() async {
     final String numeroNota = _noteNumberController.text.trim();
@@ -292,10 +296,20 @@ class _GerenciadorNotasPageState extends State<GerenciadorNotasPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("📜 Gerenciador de Notas Tigre"),
+        title: const Text(" Gerenciador de Notas Tigre"),
         centerTitle: true,
-        backgroundColor: Theme.of(context).primaryColor,
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
+            children: [
+              Image.asset('assets/logo.png'),
+              Text('configurações')
+            ],
+          ),
+          ),
+        
       ),
       body: Center(
         child: Padding(
@@ -310,10 +324,7 @@ class _GerenciadorNotasPageState extends State<GerenciadorNotasPage> {
                   onPressed: _listNotes,
                   icon: const Icon(Icons.folder_open),
                   label: const Text("Listar Notas Carregadas"),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
+                  style: AppStyles.AppElevatedButtonStyles,
                 ),
               ),
               const SizedBox(height: 10),
@@ -323,10 +334,7 @@ class _GerenciadorNotasPageState extends State<GerenciadorNotasPage> {
                   onPressed: _addNote,
                   icon: const Icon(Icons.add_circle),
                   label: const Text("Adicionar Nota (XML)"),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
+                  style: AppStyles.AppElevatedButtonStyles,
                 ),
               ),
               const SizedBox(height: 20),
@@ -352,10 +360,7 @@ class _GerenciadorNotasPageState extends State<GerenciadorNotasPage> {
                   onPressed: _consultNote,
                   icon: const Icon(Icons.search),
                   label: const Text("Consultar Nota"),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
+                  style: AppStyles.AppElevatedButtonStyles,
                 ),
               ),
               const SizedBox(height: 10),
@@ -365,10 +370,7 @@ class _GerenciadorNotasPageState extends State<GerenciadorNotasPage> {
                   onPressed: _showIcmsCalculatorDialog,
                   icon: const Icon(Icons.calculate),
                   label: const Text("Calcular ICMS"),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
+                  style: AppStyles.AppElevatedButtonStyles,
                 ),
               ),
               const SizedBox(height: 20),
@@ -402,12 +404,13 @@ class _GerenciadorNotasPageState extends State<GerenciadorNotasPage> {
                               subtitle: Text('CFOP: ${note.cfop} | Total: R\$${note.total.toStringAsFixed(2)}'),
                               onTap: () {
                                 _showNoteDetailsDialog(note);
-                              },
+                               },
                             ),
                           );
                         },
                       ),
               ),
+              CreditFooter(),
             ],
           ),
         ),

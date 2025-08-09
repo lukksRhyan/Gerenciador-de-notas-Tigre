@@ -1,6 +1,3 @@
-import 'dart:convert';
-import 'package:intl/intl.dart';
-
 // Classe para representar um produto dentro de uma nota
 class Produto {
   final String codigo;
@@ -128,6 +125,29 @@ class Nota {
       'notas_filhas': notasFilhas.map((nf) => nf.toJson()).toList(),
       'Nota Mae Numero': notaMaeNumero,
     };
+  }
+
+  // NOVO: Método copyWith para criar uma nova instância da Nota
+  Nota copyWith({
+    String? numeroNota,
+    String? cfop,
+    double? total,
+    String? informacoesAdicionais,
+    List<Produto>? produtos,
+    List<Produto>? produtosRestantes,
+    List<Nota>? notasFilhas,
+    String? notaMaeNumero,
+  }) {
+    return Nota(
+      numeroNota: numeroNota ?? this.numeroNota,
+      cfop: cfop ?? this.cfop,
+      total: total ?? this.total,
+      informacoesAdicionais: informacoesAdicionais ?? this.informacoesAdicionais,
+      produtos: produtos ?? this.produtos,
+      produtosRestantes: produtosRestantes ?? this.produtosRestantes,
+      notasFilhas: notasFilhas ?? this.notasFilhas,
+      notaMaeNumero: notaMaeNumero ?? this.notaMaeNumero,
+    );
   }
 }
 

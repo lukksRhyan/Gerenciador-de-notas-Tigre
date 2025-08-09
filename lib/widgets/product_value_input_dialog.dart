@@ -20,10 +20,23 @@ class _ProductValueInputDialogState extends State<ProductValueInputDialog> {
   final TextEditingController _valueController = TextEditingController();
   String _errorMessage = '';
   final _formKey = GlobalKey<FormState>();
+  // 1. Crie um FocusNode para controlar o foco
+  final FocusNode _valueFocusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    // 2. Solicita o foco no campo de texto após a construção do frame inicial
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FocusScope.of(context).requestFocus(_valueFocusNode);
+    });
+  }
 
   @override
   void dispose() {
+    // 3. Libera os recursos do TextEditingController e do FocusNode
     _valueController.dispose();
+    _valueFocusNode.dispose();
     super.dispose();
   }
 
@@ -80,6 +93,8 @@ class _ProductValueInputDialogState extends State<ProductValueInputDialog> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _valueController,
+                // 4. Associe o FocusNode ao TextFormField
+                focusNode: _valueFocusNode,
                 decoration: InputDecoration(
                   labelText: 'Valor Unitário',
                   hintText: 'Ex: ${numberFormat.format(12.34)}',
