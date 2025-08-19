@@ -10,7 +10,7 @@ class ExcelGenerator {
     // ===== PLANILHA NOTA PRINCIPAL (Mãe ou Filha) =====
     // O nome da planilha depende se a nota é mãe ou filha
     String sheetTitle = nota.cfop == "5922" ? "Nota Mãe" : "Detalhes da Nota";
-    Sheet sheet = excel[sheetTitle]!; // Use ! para assumir que a sheet existe ou que será criada
+    Sheet sheet = excel[sheetTitle]; // Use ! para assumir que a sheet existe ou que será criada
     excel.setDefaultSheet(sheetTitle); // Define como a primeira folha visível
 
     sheet.appendRow([TextCellValue("Gerenciador de notas Tigre - Criado por Lucas Rhyan")]);
@@ -39,9 +39,9 @@ class ExcelGenerator {
         DoubleCellValue(produto.quantidade),
         TextCellValue(produto.unidade),
         DoubleCellValue(produto.valorUnitario),
-        FormulaCellValue("C${currentRow}*E${currentRow}"), // Total (Qtd * Vlr Unit)
-        FormulaCellValue("F${currentRow}*0.2732"), // Base de Cálculo
-        FormulaCellValue("G${currentRow}*0.205"), // ICMS
+        FormulaCellValue("C$currentRow*E$currentRow"), // Total (Qtd * Vlr Unit)
+        FormulaCellValue("F$currentRow*0.2732"), // Base de Cálculo
+        FormulaCellValue("G$currentRow*0.205"), // ICMS
       ]);
     }
     _adjustColumnWidths(sheet);
@@ -52,7 +52,7 @@ class ExcelGenerator {
       for (var i = 0; i < nota.notasFilhas.length; i++) {
         final notaFilha = nota.notasFilhas[i];
         String childSheetTitle = "Nota Filha ${i + 1}";
-        Sheet childSheet = excel[childSheetTitle]!; // Use ! para assumir que a sheet existe ou que será criada
+        Sheet childSheet = excel[childSheetTitle]; // Use ! para assumir que a sheet existe ou que será criada
 
         childSheet.appendRow([TextCellValue("Número da Nota"), TextCellValue(notaFilha.numeroNota)]);
         childSheet.appendRow([TextCellValue("CFOP"), TextCellValue(notaFilha.cfop)]);
@@ -76,9 +76,9 @@ class ExcelGenerator {
             DoubleCellValue(produto.quantidade),
             TextCellValue(produto.unidade),
             DoubleCellValue(produto.valorUnitario),
-            FormulaCellValue("=C${currentChildRow}*E${currentChildRow}"),
-            FormulaCellValue("=F${currentChildRow}*0.2732"),
-            FormulaCellValue("=G${currentChildRow}*0.205"),
+            FormulaCellValue("=C$currentChildRow*E$currentChildRow"),
+            FormulaCellValue("=F$currentChildRow*0.2732"),
+            FormulaCellValue("=G$currentChildRow*0.205"),
           ]);
         }
         _adjustColumnWidths(childSheet);
@@ -87,7 +87,7 @@ class ExcelGenerator {
 
     // ===== PLANILHA PRODUTOS RESTANTES (se for nota mãe) =====
     if (nota.cfop == "5922" && nota.produtosRestantes.isNotEmpty) {
-      Sheet remainingSheet = excel["Produtos Restantes"]!; // Use ! para assumir que a sheet existe ou que será criada
+      Sheet remainingSheet = excel["Produtos Restantes"]; // Use ! para assumir que a sheet existe ou que será criada
 
       remainingSheet.appendRow([TextCellValue("Código"), TextCellValue("Descrição"), TextCellValue("Quantidade"), TextCellValue("Unidade")]);
 

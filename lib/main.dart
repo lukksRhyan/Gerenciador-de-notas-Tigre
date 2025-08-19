@@ -191,7 +191,7 @@ class _GerenciadorNotasPageState extends State<GerenciadorNotasPage> {
       _message = 'Consultando nota $numeroNota...';
     });
     try {
-      final Nota? nota = _notes.firstWhere(
+      final Nota nota = _notes.firstWhere(
         (n) => n.numeroNota == numeroNota,
         orElse: () => throw Exception('Nota $numeroNota não encontrada.'),
       );
@@ -242,7 +242,7 @@ class _GerenciadorNotasPageState extends State<GerenciadorNotasPage> {
       if (directory == null) {
         throw Exception("Não foi possível acessar o diretório de downloads.");
       }
-      final filePath = '${directory.path}/nota_${numeroNota}.xlsx';
+      final filePath = '${directory.path}/nota_$numeroNota.xlsx';
       final file = File(filePath);
       await file.writeAsBytes(excelBytes);
 
@@ -302,14 +302,11 @@ class _GerenciadorNotasPageState extends State<GerenciadorNotasPage> {
         foregroundColor: Colors.white,
         leading: Padding(
           padding: const EdgeInsets.all(8.0),
-          child: Row(
-            children: [
-              Image.asset('assets/logo.png'),
-              Text('configurações')
-            ],
+          child: Image.asset('assets/logo.png')
           ),
-          ),
-        
+        actions: [
+          IconButton(onPressed: ()=>{}, icon: Icon(Icons.))
+        ],
       ),
       body: Center(
         child: Padding(

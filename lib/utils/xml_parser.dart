@@ -14,10 +14,10 @@ class XmlParser {
     final infCplElement = xmlRoot.findAllElements("infCpl", namespace: ns['ns'])
         .firstWhere(
           (element) => true,
-      orElse: () => null!,
+      orElse: () => null,
     );
 
-    if (infCplElement != null && infCplElement.innerText.isNotEmpty) {
+    if (infCplElement.innerText.isNotEmpty) {
       final infCplText = infCplElement.innerText.trim();
       final regex = RegExp(
           r"(\d+)\s*@\s*([\d,.]+)\s*@\s*([^@]+?)\s*@\s*([\w]+)");
@@ -54,21 +54,21 @@ class XmlParser {
     final nNfElement = root.findAllElements("nNF", namespace: ns['ns'])
         .firstWhere(
           (element) => true,
-      orElse: () => null!,
+      orElse: () => null,
     );
-    final numeroNota = nNfElement?.innerText.lstrip('0') ?? "desconhecido";
+    final numeroNota = nNfElement.innerText.lstrip('0') ?? "desconhecido";
 
     final vNfElement = root.findAllElements("vNF", namespace: ns['ns'])
         .firstWhere(
           (element) => true,
-      orElse: () => null!,
+      orElse: () => null,
     );
-    final valorNota = double.tryParse(vNfElement?.innerText ?? '0.0') ?? 0.0;
+    final valorNota = double.tryParse(vNfElement.innerText ?? '0.0') ?? 0.0;
 
     final cfopElement = root.findAllElements("CFOP", namespace: ns['ns'])
         .firstWhere(
           (element) => true,
-      orElse: () => null!,
+      orElse: () => null,
     );
 
     final String cfop = cfopElement.innerText ?? "0000";
@@ -76,9 +76,9 @@ class XmlParser {
     final infCplElement = root.findAllElements("infCpl", namespace: ns['ns'])
         .firstWhere(
           (element) => true,
-      orElse: () => null!,
+      orElse: () => null,
     );
-    final infCplText = infCplElement?.innerText.trim() ?? "";
+    final infCplText = infCplElement.innerText.trim() ?? "";
 
     final produtosInfCpl = _extractProductsFromInfCpl(root);
 
@@ -119,7 +119,7 @@ class XmlParser {
             motherProd.copyWith(quantidade: newQuantity);
       } else {
         print(
-            '⚠️ Aviso: Produto ${childCode} da nota filha não encontrado na nota mãe!');
+            '⚠️ Aviso: Produto $childCode da nota filha não encontrado na nota mãe!');
       }
     }
 
