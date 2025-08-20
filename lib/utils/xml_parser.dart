@@ -12,10 +12,11 @@ class XmlParser {
   static List<Produto> _extractProductsFromInfCpl(XmlElement xmlRoot) {
     final products = <Produto>[];
     final infCplElement = xmlRoot.findAllElements("infCpl", namespace: ns['ns'])
+        .cast<XmlElement>()
         .firstWhere(
           (element) => true,
-      orElse: () => null,
-    );
+          orElse: () => XmlElement(XmlName('infCpl')), // elemento vazio
+      );
 
     if (infCplElement.innerText.isNotEmpty) {
       final infCplText = infCplElement.innerText.trim();
@@ -52,31 +53,35 @@ class XmlParser {
     final root = document.rootElement;
 
     final nNfElement = root.findAllElements("nNF", namespace: ns['ns'])
+        .cast<XmlElement>()
         .firstWhere(
           (element) => true,
-      orElse: () => null,
+          orElse: () => XmlElement(XmlName('nNF')),
     );
     final numeroNota = nNfElement.innerText.lstrip('0') ?? "desconhecido";
 
     final vNfElement = root.findAllElements("vNF", namespace: ns['ns'])
+        .cast<XmlElement>()
         .firstWhere(
           (element) => true,
-      orElse: () => null,
+          orElse: () => XmlElement(XmlName('vNF')),
     );
     final valorNota = double.tryParse(vNfElement.innerText ?? '0.0') ?? 0.0;
 
     final cfopElement = root.findAllElements("CFOP", namespace: ns['ns'])
+        .cast<XmlElement>()
         .firstWhere(
           (element) => true,
-      orElse: () => null,
+          orElse: () => XmlElement(XmlName('CFOP')),
     );
 
     final String cfop = cfopElement.innerText ?? "0000";
 
     final infCplElement = root.findAllElements("infCpl", namespace: ns['ns'])
+        .cast<XmlElement>()
         .firstWhere(
           (element) => true,
-      orElse: () => null,
+          orElse: () => XmlElement(XmlName('infCpl')),
     );
     final infCplText = infCplElement.innerText.trim() ?? "";
 

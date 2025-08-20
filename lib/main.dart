@@ -12,7 +12,9 @@ import 'dart:io';
 import 'package:notas_tigre/utils/xml_parser.dart';
 import 'package:notas_tigre/utils/excel_generator.dart';
 import 'package:notas_tigre/utils/icms_calculator.dart';
+import 'package:notas_tigre/utils/configs.dart';
 import 'package:notas_tigre/widgets/product_value_input_dialog.dart'; // NOVO IMPORT
+import 'package:notas_tigre/models/note_storage.dart';
 
 void main() {
   runApp(const MyApp());
@@ -51,7 +53,29 @@ class _GerenciadorNotasPageState extends State<GerenciadorNotasPage> {
   @override
   void initState() {
     super.initState();
+    _loadNotesFromJson();
+  }
 
+  Future<void> _loadNotesFromJson() async {
+    setState(() {
+      _isLoading = true;
+      _message = 'Carregando notas salvas...';
+    });
+    try {
+      final notes = await NoteStorage.loadNotes();
+      setState(() {
+        _notes = notes;
+        _message = notes.isEmpty ? 'Nenhuma nota salva encontrada.' : '';
+      });
+    } catch (e) {
+      setState(() {
+        _message = 'Erro ao carregar notas: $e';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _listNotes() async {
@@ -160,6 +184,7 @@ class _GerenciadorNotasPageState extends State<GerenciadorNotasPage> {
       setState(() {
         _message = 'Nota ${processedNota.numeroNota} processada e adicionada com sucesso!';
       });
+      await NoteStorage.saveNotes(_notes); // Salva as notas
       _listNotes();
     } catch (e) {
       setState(() {
@@ -292,6 +317,17 @@ class _GerenciadorNotasPageState extends State<GerenciadorNotasPage> {
     );
   }
 
+  Future<void> _chooseNotesFolder() async {
+    String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
+    if (selectedDirectory != null) {
+      setState(() {
+        MyAppConfigs().notesFolderPath = selectedDirectory;
+        _message = 'Pasta de notas definida: $selectedDirectory';
+      });
+      await _loadNotesFromJson(); // Recarrega notas da nova pasta
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -305,7 +341,11 @@ class _GerenciadorNotasPageState extends State<GerenciadorNotasPage> {
           child: Image.asset('assets/logo.png')
           ),
         actions: [
-          IconButton(onPressed: ()=>{}, icon: Icon(Icons.))
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: _chooseNotesFolder,
+            tooltip: 'Configurar pasta das notas',
+          ),
         ],
       ),
       body: Center(
