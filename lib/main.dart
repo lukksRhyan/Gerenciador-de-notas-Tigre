@@ -46,6 +46,7 @@ class GerenciadorNotasPage extends StatefulWidget {
 
 class _GerenciadorNotasPageState extends State<GerenciadorNotasPage> {
   final TextEditingController _noteNumberController = TextEditingController();
+  final TextEditingController _accessKeyController = TextEditingController();
   List<Nota> _notes = [];
   bool _isLoading = false;
   String _message = '';
@@ -328,6 +329,100 @@ class _GerenciadorNotasPageState extends State<GerenciadorNotasPage> {
     }
   }
 
+  Future<void> _openXmlByAccessKey() async {
+  final accessKey = _accessKeyController.text.trim();
+  if (accessKey.isEmpty) {
+    setState(() {
+      _message = 'Digite a chave de acesso da nota.';
+    });
+    return;
+  }
+  final xmlFolder = MyAppConfigs().xmlFolderPath;
+  if (xmlFolder.isEmpty) {
+    setState(() {
+      _message = 'Configure a pasta padrão dos XMLs nas configurações.';
+    });
+    return;
+  }
+  final xmlPath = '$xmlFolder/$accessKey.xml';
+  final xmlFile = File(xmlPath);
+  if (!await xmlFile.exists()) {
+    setState(() {
+      _message = 'Arquivo não encontrado: $xmlPath';
+    });
+    return;
+  }
+  try {
+    final xmlContent = await xmlFile.readAsString();
+    final rawNoteData = XmlParser.extractNoteData(xmlContent);
+    final cfop = rawNoteData['CFOP'] as String? ?? '';
+    if (cfop.isEmpty) throw Exception('CFOP não encontrado no XML.');
+    List<Produto> productsWithValues = (rawNoteData['Produtos'] as List)
+        .map((p) => Produto.fromJson(p)).toList();
+
+    final processedNota = XmlParser.addNotaToNotesList(rawNoteData, productsWithValues, _notes);
+    setState(() {
+      _message = 'Nota ${processedNota.numeroNota} carregada pela chave de acesso!';
+    });
+    await NoteStorage.saveNotes(_notes);
+    _listNotes();
+  } catch (e) {
+    setState(() {
+      _message = 'Erro ao abrir XML: $e';
+    });
+  }
+}
+
+  Future<void> _showConfigDialog() async {
+  await showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text('Configurações de Pastas'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ElevatedButton.icon(
+              icon: const Icon(Icons.folder),
+              label: const Text('Selecionar pasta das notas'),
+              onPressed: () async {
+                String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
+                if (selectedDirectory != null) {
+                  setState(() {
+                    MyAppConfigs().notesFolderPath = selectedDirectory;
+                    _message = 'Pasta de notas definida: $selectedDirectory';
+                  });
+                  await _loadNotesFromJson();
+                }
+              },
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.folder_open),
+              label: const Text('Selecionar pasta dos XMLs'),
+              onPressed: () async {
+                String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
+                if (selectedDirectory != null) {
+                  setState(() {
+                    MyAppConfigs().xmlFolderPath = selectedDirectory;
+                    _message = 'Pasta de XMLs definida: $selectedDirectory';
+                  });
+                }
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            child: const Text('Fechar'),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+      );
+    },
+  );
+}
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -343,8 +438,8 @@ class _GerenciadorNotasPageState extends State<GerenciadorNotasPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
-            onPressed: _chooseNotesFolder,
-            tooltip: 'Configurar pasta das notas',
+            onPressed: _showConfigDialog,
+            tooltip: 'Configurações',
           ),
         ],
       ),
@@ -408,6 +503,33 @@ class _GerenciadorNotasPageState extends State<GerenciadorNotasPage> {
                   icon: const Icon(Icons.calculate),
                   label: const Text("Calcular ICMS"),
                   style: AppStyles.AppElevatedButtonStyles,
+                ),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: 250,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _accessKeyController,
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(10)),
+                          ),
+                          hintText: 'Chave de acesso',
+                          contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton.icon(
+                      onPressed: _openXmlByAccessKey,
+                      icon: const Icon(Icons.vpn_key),
+                      label: const Text("Abrir XML"),
+                      style: AppStyles.AppElevatedButtonStyles,
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 20),

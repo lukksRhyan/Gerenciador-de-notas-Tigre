@@ -9,5 +9,6 @@ class MyAppConfigs{
 
   // Adicione suas configurações abaixo
   String notesFolderPath = '';
+  String xmlFolderPath = ''; // NOVO: pasta padrão dos XMLs
   bool isDebugMode = true;
 }
