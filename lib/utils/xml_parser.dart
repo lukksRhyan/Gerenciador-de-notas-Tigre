@@ -175,28 +175,21 @@ class XmlParser {
         numeroNota: numeroNota,
         cfop: cfop,
         total: rawNoteData['Total'] as double,
-        informacoesAdicionais: rawNoteData['Informações Adicionais'] as String? ??
-            '',
-        // Tratamento para null
+        informacoesAdicionais: rawNoteData['Informações Adicionais'] as String? ?? '',
         produtos: productsWithValues,
         produtosRestantes: List.from(productsWithValues),
         notasFilhas: [],
       );
 
-      int existingIndex = notesList.indexWhere((n) =>
-      n.numeroNota == numeroNota);
+      int existingIndex = notesList.indexWhere((n) => n.numeroNota == numeroNota);
       if (existingIndex != -1) {
         notesList[existingIndex] = newNota;
-        print('✅ Nota Mãe $numeroNota atualizada na lista em memória.');
       } else {
         notesList.add(newNota);
-        print('✅ Nota Mãe $numeroNota adicionada à lista em memória.');
       }
       return newNota;
     } else if (cfop == "5116" && notaMaeNumero != null) { // Nota Filha
-      print('📌 Buscando Nota Mãe $notaMaeNumero na lista em memória...');
-      int motherNoteIndex = notesList.indexWhere((n) =>
-      n.numeroNota == notaMaeNumero);
+      int motherNoteIndex = notesList.indexWhere((n) => n.numeroNota == notaMaeNumero);
       Nota motherNote;
 
       if (motherNoteIndex != -1) {
@@ -205,42 +198,40 @@ class XmlParser {
         final productsWithMotherValues = _mapChildProductsWithMotherValues(
             motherNote.produtos, productsWithValues);
 
+        // Atualiza produtosRestantes corretamente
         final updatedRemainingProducts = _updateRemainingProducts(
-            motherNote.produtos, productsWithMotherValues);
+            motherNote.produtosRestantes, productsWithMotherValues);
 
         final Nota newChildNota = Nota(
           numeroNota: numeroNota,
           cfop: cfop,
-          total: rawNoteData['Total'] as double? ?? 0.0,
-          // Tratamento para null
-          informacoesAdicionais: rawNoteData['Informacoes Adicionais'] as String? ??
-              '',
-          // Tratamento para null
+          total: rawNoteData['Total'] as double,
+          informacoesAdicionais: rawNoteData['Informações Adicionais'] as String? ?? '',
           produtos: productsWithMotherValues,
+          produtosRestantes: const [],
+          notasFilhas: [],
           notaMaeNumero: notaMaeNumero,
         );
 
+        // Adiciona nota filha à mãe e atualiza produtosRestantes
         motherNote = motherNote.copyWith(
-          produtosRestantes: updatedRemainingProducts,
           notasFilhas: [...motherNote.notasFilhas, newChildNota],
+          produtosRestantes: updatedRemainingProducts,
+          completa: updatedRemainingProducts.isEmpty, // NOVO: marca como completa
         );
         notesList[motherNoteIndex] = motherNote;
 
-        print('✅ Nota Filha $numeroNota adicionada à Nota Mãe $notaMaeNumero.');
         return newChildNota;
       } else {
-        print(
-            '⚠️ Nota Mãe $notaMaeNumero não encontrada. A nota filha será processada com valores unitários zerados.');
-
+        // Se não encontrar nota mãe, adiciona como nota independente
         final Nota newChildNota = Nota(
           numeroNota: numeroNota,
           cfop: cfop,
-          total: rawNoteData['Total'] as double? ?? 0.0,
-          // Tratamento para null
-          informacoesAdicionais: rawNoteData['Informacoes Adicionais'] as String? ??
-              '',
-          // Tratamento para null
+          total: rawNoteData['Total'] as double,
+          informacoesAdicionais: rawNoteData['Informações Adicionais'] as String? ?? '',
           produtos: productsWithValues,
+          produtosRestantes: const [],
+          notasFilhas: [],
           notaMaeNumero: notaMaeNumero,
         );
         notesList.add(newChildNota);

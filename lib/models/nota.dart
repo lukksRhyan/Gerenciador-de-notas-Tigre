@@ -64,6 +64,7 @@ class Nota {
   final List<Produto> produtosRestantes;
   final List<Nota> notasFilhas;
   final String? notaMaeNumero;
+  final bool completa; // NOVO
 
   Nota({
     required this.numeroNota,
@@ -74,6 +75,7 @@ class Nota {
     this.produtosRestantes = const [],
     this.notasFilhas = const [],
     this.notaMaeNumero,
+    this.completa = false, // NOVO
   });
 
   // Converte um mapa (JSON) em um objeto Nota
@@ -110,9 +112,15 @@ class Nota {
       produtosRestantes: produtosRestantesList,
       notasFilhas: notasFilhasList,
       notaMaeNumero: json['Nota Mae Numero']?.toString(),
+      completa: json['completa'] == true, // NOVO
     );
   }
+  double get totalRestante {
+    if (cfop != "5922") return 0.0; // Apenas notas mãe têm total restante
 
+    double filhosTotal = notasFilhas.fold(0.0, (sum, nf) => sum + nf.total);
+    return total - filhosTotal;
+  }
   // Converte um objeto Nota em um mapa (para salvar/passar dados)
   Map<String, dynamic> toJson() {
     return {
@@ -124,6 +132,7 @@ class Nota {
       'produtos_restantes': produtosRestantes.map((p) => p.toJson()).toList(),
       'notas_filhas': notasFilhas.map((nf) => nf.toJson()).toList(),
       'Nota Mae Numero': notaMaeNumero,
+      'completa': completa, // NOVO
     };
   }
 
@@ -137,6 +146,7 @@ class Nota {
     List<Produto>? produtosRestantes,
     List<Nota>? notasFilhas,
     String? notaMaeNumero,
+    bool? completa, // NOVO
   }) {
     return Nota(
       numeroNota: numeroNota ?? this.numeroNota,
@@ -147,6 +157,7 @@ class Nota {
       produtosRestantes: produtosRestantes ?? this.produtosRestantes,
       notasFilhas: notasFilhas ?? this.notasFilhas,
       notaMaeNumero: notaMaeNumero ?? this.notaMaeNumero,
+      completa: completa ?? this.completa, // NOVO
     );
   }
 }

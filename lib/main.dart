@@ -15,6 +15,7 @@ import 'package:notas_tigre/utils/icms_calculator.dart';
 import 'package:notas_tigre/utils/configs.dart';
 import 'package:notas_tigre/widgets/product_value_input_dialog.dart'; // NOVO IMPORT
 import 'package:notas_tigre/models/note_storage.dart';
+import 'package:notas_tigre/widgets/xml_batch_import_dialog.dart';
 
 void main() {
   runApp(const MyApp());
@@ -50,6 +51,8 @@ class _GerenciadorNotasPageState extends State<GerenciadorNotasPage> {
   List<Nota> _notes = [];
   bool _isLoading = false;
   String _message = '';
+  bool _showCompletedNotes = true;
+  bool _showIncompleteNotes = true; // NOVO: controla exibição das notas incompletas
 
   @override
   void initState() {
@@ -423,6 +426,99 @@ class _GerenciadorNotasPageState extends State<GerenciadorNotasPage> {
   );
 }
 
+  Future<void> _importXmlBatch() async {
+  await showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) {
+      return XmlBatchImportDialog(
+        onImport: (cnpj, setStatus, setProgress) async {
+          final xmlFolder = MyAppConfigs().xmlFolderPath;
+          if (xmlFolder.isEmpty) {
+            setStatus('Configure a pasta dos XMLs nas configurações.');
+            return;
+          }
+          setStatus('Lendo pasta...');
+          final dir = Directory(xmlFolder);
+          final files = dir
+              .listSync()
+              .whereType<File>()
+              .where((f) => f.path.toLowerCase().endsWith('.xml'))
+              .toList();
+
+          // Filtra arquivos pelo CNPJ na chave de acesso (7º ao 20º caractere)
+          List<File> filteredFiles = files;
+          if (cnpj.isNotEmpty && cnpj.length == 14) {
+            filteredFiles = files.where((file) {
+              final fileName = file.uri.pathSegments.last.replaceAll('.xml', '');
+              if (fileName.length >= 20) {
+                final cnpjFromKey = fileName.substring(6, 20);
+                return cnpjFromKey == cnpj;
+              }
+              return false;
+            }).toList();
+          }
+
+          final total = filteredFiles.length;
+          if (total == 0) {
+            setStatus('Nenhum arquivo XML encontrado para o CNPJ informado.');
+            return;
+          }
+
+          // Separar notas mãe e filhas
+          List<Map<String, dynamic>> motherNotes = [];
+          List<Map<String, dynamic>> childNotes = [];
+
+          int processed = 0;
+          for (final file in filteredFiles) {
+            try {
+              final xmlContent = await file.readAsString();
+              final rawNoteData = XmlParser.extractNoteData(xmlContent);
+              final cfop = rawNoteData['CFOP'] as String? ?? '';
+              if (cfop == "5922") {
+                motherNotes.add(rawNoteData);
+              } else if (cfop == "5116") {
+                childNotes.add(rawNoteData);
+              }
+              // Ignora outros CFOPs
+            } catch (_) {
+              // Ignora arquivos inválidos
+            }
+            processed++;
+            setProgress(processed / total * 0.5);
+            setStatus('Lendo pasta... ($processed/$total)');
+          }
+
+          setStatus('Adicionando notas mãe...');
+          for (int i = 0; i < motherNotes.length; i++) {
+            final raw = motherNotes[i];
+            List<Produto> products = (raw['Produtos'] as List)
+                .map((p) => Produto.fromJson(p)).toList();
+            XmlParser.addNotaToNotesList(raw, products, _notes);
+            setProgress(0.5 + (i + 1) / motherNotes.length * 0.25);
+            setStatus('Adicionando notas mãe... (${i + 1}/${motherNotes.length})');
+          }
+
+          setStatus('Adicionando notas filhas...');
+          for (int i = 0; i < childNotes.length; i++) {
+            final raw = childNotes[i];
+            List<Produto> products = (raw['Produtos'] as List)
+                .map((p) => Produto.fromJson(p)).toList();
+            XmlParser.addNotaToNotesList(raw, products, _notes);
+            setProgress(0.75 + (i + 1) / childNotes.length * 0.25);
+            setStatus('Adicionando notas filhas... (${i + 1}/${childNotes.length})');
+          }
+
+          setStatus('Concluído!');
+          setProgress(1.0);
+          await NoteStorage.saveNotes(_notes);
+          setState(() {});
+        },
+      );
+    },
+  );
+}
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -466,6 +562,16 @@ class _GerenciadorNotasPageState extends State<GerenciadorNotasPage> {
                   onPressed: _addNote,
                   icon: const Icon(Icons.add_circle),
                   label: const Text("Adicionar Nota (XML)"),
+                  style: AppStyles.AppElevatedButtonStyles,
+                ),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: 250,
+                child: ElevatedButton.icon(
+                  onPressed: _importXmlBatch,
+                  icon: const Icon(Icons.file_download),
+                  label: const Text("Importar XMLs em lote"),
                   style: AppStyles.AppElevatedButtonStyles,
                 ),
               ),
@@ -532,27 +638,69 @@ class _GerenciadorNotasPageState extends State<GerenciadorNotasPage> {
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
-              _isLoading
-                  ? const CircularProgressIndicator()
-                  : _message.isNotEmpty
-                      ? Text(
-                          _message,
-                          style: TextStyle(
-                            color: _message.contains('Erro') ? Colors.red : Colors.green,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        )
-                      : Container(),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ChoiceChip(
+                    avatar: _showCompletedNotes
+                        ? const Icon(Icons.check_circle, color: Colors.green)
+                        : null,
+                    label: Text(_showCompletedNotes
+                        ? "Exibir notas completas"
+                        : "Ocultar notas completas"),
+                    selected: _showCompletedNotes,
+                    onSelected: (selected) {
+                      setState(() {
+                        _showCompletedNotes = !_showCompletedNotes;
+                      });
+                    },
+                    selectedColor: Colors.blue.shade100,
+                    backgroundColor: Colors.grey.shade200,
+                    labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(width: 10),
+                  ChoiceChip(
+                    avatar: _showIncompleteNotes
+                        ? const Icon(Icons.hourglass_empty, color: Colors.orange)
+                        : null,
+                    label: Text(_showIncompleteNotes
+                        ? "Exibir incompletas"
+                        : "Ocultar incompletas"),
+                    selected: _showIncompleteNotes,
+                    onSelected: (selected) {
+                      setState(() {
+                        _showIncompleteNotes = !_showIncompleteNotes;
+                      });
+                    },
+                    selectedColor: Colors.orange.shade100,
+                    backgroundColor: Colors.grey.shade200,
+                    labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
               const SizedBox(height: 10),
               Expanded(
                 child: _notes.isEmpty && !_isLoading && _message.isEmpty
                     ? const Text("Adicione um arquivo XML para começar a gerenciar notas localmente.")
                     : ListView.builder(
-                        itemCount: _notes.length,
+                        itemCount: _notes
+                            .where((note) =>
+                              // Filtra completas/incompletas conforme os chips
+                              (note.cfop != "5922") ||
+                              (_showCompletedNotes && note.completa && note.cfop == "5922") ||
+                              (_showIncompleteNotes && !note.completa && note.cfop == "5922")
+                            )
+                            .length,
                         itemBuilder: (context, index) {
-                          final note = _notes[index];
+                          final filteredNotes = _notes
+                              .where((note) =>
+                                (note.cfop != "5922") ||
+                                (_showCompletedNotes && note.completa && note.cfop == "5922") ||
+                                (_showIncompleteNotes && !note.completa && note.cfop == "5922")
+                              )
+                              .toList();
+                          final note = filteredNotes[index];
                           return Card(
                             margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
                             elevation: 2,
@@ -560,10 +708,13 @@ class _GerenciadorNotasPageState extends State<GerenciadorNotasPage> {
                             child: ListTile(
                               leading: const Icon(Icons.description, color: Colors.blue),
                               title: Text('Nota: ${note.numeroNota}'),
-                              subtitle: Text('CFOP: ${note.cfop} | Total: R\$${note.total.toStringAsFixed(2)}'),
+                              subtitle: Text(
+                                'CFOP: ${note.cfop} | Total: R\$${note.total.toStringAsFixed(2)}'
+                                '${note.cfop == "5922" ? (note.completa ? " | COMPLETA" : " | INCOMPLETA") : ""}'
+                              ),
                               onTap: () {
                                 _showNoteDetailsDialog(note);
-                               },
+                              },
                             ),
                           );
                         },
