@@ -11,6 +11,7 @@ class NoteStorage {
 
   static Future<List<Nota>> loadNotes() async {
     final filePath = getNotesFilePath();
+    print(  'Loading notes from: $filePath'); // Linha de depuração
     final file = File(filePath);
     if (await file.exists()) {
       final content = await file.readAsString();

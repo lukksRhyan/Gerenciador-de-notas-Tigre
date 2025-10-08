@@ -52,7 +52,7 @@ class _GerenciadorNotasPageState extends State<GerenciadorNotasPage> {
   bool _isLoading = false;
   String _message = '';
   bool _showCompletedNotes = true;
-  bool _showIncompleteNotes = true; // NOVO: controla exibição das notas incompletas
+  bool _showIncompleteNotes = true;
 
   @override
   void initState() {
@@ -228,7 +228,7 @@ class _GerenciadorNotasPageState extends State<GerenciadorNotasPage> {
       setState(() {
         _message = '';
       });
-      _showNoteDetailsDialog(nota!);
+      _showNoteDetailsDialog(nota);
     } catch (e) {
       setState(() {
         _message = 'Erro ao consultar nota $numeroNota: $e';
@@ -521,6 +521,9 @@ class _GerenciadorNotasPageState extends State<GerenciadorNotasPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Define a largura para a coluna de ações (Left Pane)
+    const double actionPanelWidth = 300.0;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(" Gerenciador de Notas Tigre"),
@@ -530,7 +533,7 @@ class _GerenciadorNotasPageState extends State<GerenciadorNotasPage> {
         leading: Padding(
           padding: const EdgeInsets.all(8.0),
           child: Image.asset('assets/logo.png')
-          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
@@ -539,192 +542,230 @@ class _GerenciadorNotasPageState extends State<GerenciadorNotasPage> {
           ),
         ],
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              SizedBox(
-                width: 250,
-                child: ElevatedButton.icon(
-                  onPressed: _listNotes,
-                  icon: const Icon(Icons.folder_open),
-                  label: const Text("Listar Notas Carregadas"),
-                  style: AppStyles.AppElevatedButtonStyles,
-                ),
-              ),
-              const SizedBox(height: 10),
-              SizedBox(
-                width: 250,
-                child: ElevatedButton.icon(
-                  onPressed: _addNote,
-                  icon: const Icon(Icons.add_circle),
-                  label: const Text("Adicionar Nota (XML)"),
-                  style: AppStyles.AppElevatedButtonStyles,
-                ),
-              ),
-              const SizedBox(height: 10),
-              SizedBox(
-                width: 250,
-                child: ElevatedButton.icon(
-                  onPressed: _importXmlBatch,
-                  icon: const Icon(Icons.file_download),
-                  label: const Text("Importar XMLs em lote"),
-                  style: AppStyles.AppElevatedButtonStyles,
-                ),
-              ),
-              const SizedBox(height: 20),
-              const Text("Digite o número da nota:"),
-              SizedBox(
-                width: 250,
-                child: TextField(
-                  controller: _noteNumberController,
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(10)),
-                    ),
-                    hintText: 'Número da Nota',
-                    contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  ),
-                  keyboardType: TextInputType.number,
-                ),
-              ),
-              const SizedBox(height: 10),
-              SizedBox(
-                width: 250,
-                child: ElevatedButton.icon(
-                  onPressed: _consultNote,
-                  icon: const Icon(Icons.search),
-                  label: const Text("Consultar Nota"),
-                  style: AppStyles.AppElevatedButtonStyles,
-                ),
-              ),
-              const SizedBox(height: 10),
-              SizedBox(
-                width: 250,
-                child: ElevatedButton.icon(
-                  onPressed: _showIcmsCalculatorDialog,
-                  icon: const Icon(Icons.calculate),
-                  label: const Text("Calcular ICMS"),
-                  style: AppStyles.AppElevatedButtonStyles,
-                ),
-              ),
-              const SizedBox(height: 10),
-              SizedBox(
-                width: 250,
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _accessKeyController,
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(10)),
-                          ),
-                          hintText: 'Chave de acesso',
-                          contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton.icon(
-                      onPressed: _openXmlByAccessKey,
-                      icon: const Icon(Icons.vpn_key),
-                      label: const Text("Abrir XML"),
-                      style: AppStyles.AppElevatedButtonStyles,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column( // Coluna principal para empilhar o conteúdo principal (Row) e o Footer
+          children: [
+            Expanded( // A Row de conteúdo principal ocupa o espaço vertical disponível
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start, // Alinha o conteúdo ao topo
                 children: [
-                  ChoiceChip(
-                    avatar: _showCompletedNotes
-                        ? const Icon(Icons.check_circle, color: Colors.green)
-                        : null,
-                    label: Text(_showCompletedNotes
-                        ? "Exibir notas completas"
-                        : "Ocultar notas completas"),
-                    selected: _showCompletedNotes,
-                    onSelected: (selected) {
-                      setState(() {
-                        _showCompletedNotes = !_showCompletedNotes;
-                      });
-                    },
-                    selectedColor: Colors.blue.shade100,
-                    backgroundColor: Colors.grey.shade200,
-                    labelStyle: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(width: 10),
-                  ChoiceChip(
-                    avatar: _showIncompleteNotes
-                        ? const Icon(Icons.hourglass_empty, color: Colors.orange)
-                        : null,
-                    label: Text(_showIncompleteNotes
-                        ? "Exibir incompletas"
-                        : "Ocultar incompletas"),
-                    selected: _showIncompleteNotes,
-                    onSelected: (selected) {
-                      setState(() {
-                        _showIncompleteNotes = !_showIncompleteNotes;
-                      });
-                    },
-                    selectedColor: Colors.orange.shade100,
-                    backgroundColor: Colors.grey.shade200,
-                    labelStyle: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Expanded(
-                child: _notes.isEmpty && !_isLoading && _message.isEmpty
-                    ? const Text("Adicione um arquivo XML para começar a gerenciar notas localmente.")
-                    : ListView.builder(
-                        itemCount: _notes
-                            .where((note) =>
-                              // Filtra completas/incompletas conforme os chips
-                              (note.cfop != "5922") ||
-                              (_showCompletedNotes && note.completa && note.cfop == "5922") ||
-                              (_showIncompleteNotes && !note.completa && note.cfop == "5922")
-                            )
-                            .length,
-                        itemBuilder: (context, index) {
-                          final filteredNotes = _notes
-                              .where((note) =>
-                                (note.cfop != "5922") ||
-                                (_showCompletedNotes && note.completa && note.cfop == "5922") ||
-                                (_showIncompleteNotes && !note.completa && note.cfop == "5922")
-                              )
-                              .toList();
-                          final note = filteredNotes[index];
-                          return Card(
-                            margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-                            elevation: 2,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            child: ListTile(
-                              leading: const Icon(Icons.description, color: Colors.blue),
-                              title: Text('Nota: ${note.numeroNota}'),
-                              subtitle: Text(
-                                'CFOP: ${note.cfop} | Total: R\$${note.total.toStringAsFixed(2)}'
-                                '${note.cfop == "5922" ? (note.completa ? " | COMPLETA" : " | INCOMPLETA") : ""}'
-                              ),
-                              onTap: () {
-                                _showNoteDetailsDialog(note);
-                              },
+                  // --- LADO ESQUERDO: Ações e Inputs ---
+                  SizedBox(
+                    width: actionPanelWidth, // Largura fixa para a coluna de ações
+                    child: SingleChildScrollView( // Permite rolagem se as ações transbordarem verticalmente
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 250,
+                            child: ElevatedButton.icon(
+                              onPressed: _listNotes,
+                              icon: const Icon(Icons.folder_open),
+                              label: const Text("Listar Notas Carregadas"),
+                              style: AppStyles.AppElevatedButtonStyles,
                             ),
-                          );
-                        },
+                          ),
+                          const SizedBox(height: 10),
+                          SizedBox(
+                            width: 250,
+                            child: ElevatedButton.icon(
+                              onPressed: _addNote,
+                              icon: const Icon(Icons.add_circle),
+                              label: const Text("Adicionar Nota (XML)"),
+                              style: AppStyles.AppElevatedButtonStyles,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          SizedBox(
+                            width: 250,
+                            child: ElevatedButton.icon(
+                              onPressed: _importXmlBatch,
+                              icon: const Icon(Icons.file_download),
+                              label: const Text("Importar XMLs em lote"),
+                              style: AppStyles.AppElevatedButtonStyles,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          const Text("Digite o número da nota:"),
+                          SizedBox(
+                            width: 250,
+                            child: TextField(
+                              controller: _noteNumberController,
+                              decoration: const InputDecoration(
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.all(Radius.circular(10)),
+                                ),
+                                hintText: 'Número da Nota',
+                                contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                              ),
+                              keyboardType: TextInputType.number,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          SizedBox(
+                            width: 250,
+                            child: ElevatedButton.icon(
+                              onPressed: _consultNote,
+                              icon: const Icon(Icons.search),
+                              label: const Text("Consultar Nota"),
+                              style: AppStyles.AppElevatedButtonStyles,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          SizedBox(
+                            width: 250,
+                            child: ElevatedButton.icon(
+                              onPressed: _showIcmsCalculatorDialog,
+                              icon: const Icon(Icons.calculate),
+                              label: const Text("Calcular ICMS"),
+                              style: AppStyles.AppElevatedButtonStyles,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          SizedBox(
+                            width: 250,
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: TextField(
+                                    controller: _accessKeyController,
+                                    decoration: const InputDecoration(
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.all(Radius.circular(10)),
+                                      ),
+                                      hintText: 'Chave de acesso',
+                                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                ElevatedButton.icon(
+                                  onPressed: _openXmlByAccessKey,
+                                  icon: const Icon(Icons.vpn_key),
+                                  label: const Text("Abrir XML"),
+                                  style: AppStyles.AppElevatedButtonStyles,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              ChoiceChip(
+                                avatar: _showCompletedNotes
+                                    ? const Icon(Icons.check_circle, color: Colors.green)
+                                    : null,
+                                label: Text(_showCompletedNotes
+                                    ? "Exibir notas completas"
+                                    : "Ocultar notas completas"),
+                                selected: _showCompletedNotes,
+                                onSelected: (selected) {
+                                  setState(() {
+                                    _showCompletedNotes = !_showCompletedNotes;
+                                  });
+                                },
+                                selectedColor: Colors.blue.shade100,
+                                backgroundColor: Colors.grey.shade200,
+                                labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(width: 10),
+                              ChoiceChip(
+                                avatar: _showIncompleteNotes
+                                    ? const Icon(Icons.hourglass_empty, color: Colors.orange)
+                                    : null,
+                                label: Text(_showIncompleteNotes
+                                    ? "Exibir incompletas"
+                                    : "Ocultar incompletas"),
+                                selected: _showIncompleteNotes,
+                                onSelected: (selected) {
+                                  setState(() {
+                                    _showIncompleteNotes = !_showIncompleteNotes;
+                                  });
+                                },
+                                selectedColor: Colors.orange.shade100,
+                                backgroundColor: Colors.grey.shade200,
+                                labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                        ],
                       ),
-              ),
-              CreditFooter(),
-            ],
+                    ),
+                  ),
+
+                  const SizedBox(width: 20), // Separador
+
+                  // --- LADO DIREITO: Lista de Notas ---
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Indicador de carregamento/Mensagem
+                        if (_isLoading)
+                          const Center(child: LinearProgressIndicator())
+                        else if (_message.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8.0),
+                            child: Text(_message, style: TextStyle(color: _message.contains('Erro') ? Colors.red : Colors.black87)),
+                          ),
+
+                        // Área da Lista
+                        Expanded(
+                          child: _notes.isEmpty && !_isLoading && _message.isEmpty
+                              ? const Text("Adicione um arquivo XML para começar a gerenciar notas localmente.")
+                              : ListView.builder(
+                                  itemCount: _notes
+                                      .where((note) =>
+                                        // Filtra completas/incompletas conforme os chips
+                                        (note.cfop != "5922") ||
+                                        (_showCompletedNotes && note.completa && note.cfop == "5922") ||
+                                        (_showIncompleteNotes && !note.completa && note.cfop == "5922")
+                                      )
+                                      .length,
+                                  itemBuilder: (context, index) {
+                                      final filteredNotes = _notes
+                                          .where((note) =>
+                                            (note.cfop != "5922") ||
+                                            (_showCompletedNotes && note.completa && note.cfop == "5922") ||
+                                            (_showIncompleteNotes && !note.completa && note.cfop == "5922")
+                                          )
+                                          .toList();
+                                  final note = filteredNotes[index];
+                                  return Card(
+                                    margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                                    elevation: 2,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    child: ListTile(
+                                      leading: const Icon(Icons.description, color: Colors.blue),
+                                      title: Text('Nota: ${note.numeroNota}'),
+                                      subtitle: Text(
+                                        'CFOP: ${note.cfop} | Total: R\$${note.total.toStringAsFixed(2)}'
+                                        '${note.cfop == "5922" ? (note.completa ? " | COMPLETA" : " | INCOMPLETA") : ""}'
+                                      ),
+                                      onTap: () {
+                                        _showNoteDetailsDialog(note);
+                                      },
+                                    ),
+                                  );
+                                },
+                              ),
+                        ),
+                      ],
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
+          
+          // Footer (mantido na parte inferior, abrangendo a largura total)
+          const SizedBox(height: 10),
+          CreditFooter(),
+        ],
       ),
-    );
+    ));
   }
 }
