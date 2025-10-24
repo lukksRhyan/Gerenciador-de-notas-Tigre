@@ -1,6 +1,6 @@
-# notas_tigre
+# Gerenciador de notas Tigre
 
-A new Flutter project.
+Programa para gerenciamento de notas com faturamento parcelado
 
 ## Getting Started
 
