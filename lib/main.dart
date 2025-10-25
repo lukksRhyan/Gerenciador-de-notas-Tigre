@@ -29,8 +29,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Gerenciador de Notas Tigre',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
       home: const GerenciadorNotasPage(),
