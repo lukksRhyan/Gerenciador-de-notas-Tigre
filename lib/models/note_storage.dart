@@ -6,6 +6,7 @@ import 'package:notas_tigre/utils/configs.dart';
 class NoteStorage {
   static String getNotesFilePath() {
     final folder = MyAppConfigs().notesFolderPath;
+    print('Notes folder path: $folder'); // Linha de depuração
     return '$folder/notas_tigre.json';
   }
 
