@@ -412,6 +412,8 @@ class _GerenciadorNotasPageState extends State<GerenciadorNotasPage> {
                 }
               },
             ),
+            SizedBox(height: 20),
+            CreditFooter(),
           ],
         ),
         actions: [
@@ -760,9 +762,7 @@ class _GerenciadorNotasPageState extends State<GerenciadorNotasPage> {
             ),
           ),
           
-          // Footer (mantido na parte inferior, abrangendo a largura total)
-          const SizedBox(height: 10),
-          CreditFooter(),
+
         ],
       ),
     ));
