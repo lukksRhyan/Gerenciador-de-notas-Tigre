@@ -39,9 +39,9 @@ class ExcelGenerator {
         DoubleCellValue(produto.quantidade),
         TextCellValue(produto.unidade),
         DoubleCellValue(produto.valorUnitario),
-        FormulaCellValue("C$currentRow*E$currentRow"), // Total (Qtd * Vlr Unit)
-        FormulaCellValue("F$currentRow*0.2732"), // Base de Cálculo
-        FormulaCellValue("G$currentRow*0.205"), // ICMS
+        FormulaCellValue("ROUND(C$currentRow*E$currentRow, 2)"), // Total (Qtd * Vlr Unit)
+        FormulaCellValue("ROUND(F$currentRow*0.2732, 2)"), // Base de Cálculo
+        FormulaCellValue("ROUND(G$currentRow*0.205, 2)"), // ICMS
       ]);
     }
     _adjustColumnWidths(sheet);
