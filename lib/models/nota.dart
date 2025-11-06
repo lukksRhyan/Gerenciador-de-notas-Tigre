@@ -174,4 +174,7 @@ extension StringExtension on String {
     }
     return substring(i);
   }
+   String lstripAllZeros() {
+    return replaceFirst(RegExp(r'^0+'), '');
+  }
 }
