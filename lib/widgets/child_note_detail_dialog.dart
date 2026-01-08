@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:notas_tigre/models/nota.dart';
 import 'package:intl/intl.dart';
+import 'package:notas_tigre/utils/automation_helper.dart';
 import 'package:notas_tigre/utils/icms_calculator.dart';
 
 class ChildNoteDetailDialog extends StatelessWidget {
@@ -29,6 +31,7 @@ class ChildNoteDetailDialog extends StatelessWidget {
                 DataColumn(label: Text('Total')),
                 DataColumn(label: Text('Base ICMS')),
                 DataColumn(label: Text('ICMS')),
+                DataColumn(label: Text('AUTO')),
               ],
               rows: nota.produtos.map((produto) {
                 final total = produto.quantidade * produto.valorUnitario;
@@ -42,6 +45,28 @@ class ChildNoteDetailDialog extends StatelessWidget {
                   DataCell(Text(currencyFormat.format(total))),
                   DataCell(Text(currencyFormat.format(icmsData['base']))),
                   DataCell(Text(currencyFormat.format(icmsData['ICMS']))),
+                  DataCell(
+  IconButton(
+    icon: const Icon(Icons.bolt, color: Colors.orange),
+    tooltip: "Lançar no Sistema",
+    onPressed: () async {   
+      // 1. Remove o foco do app para evitar conflitos de eventos de hardware
+      FocusManager.instance.primaryFocus?.unfocus();
+
+      // 2. Feedback visual
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Iniciando automação... O sistema será focado automaticamente."),
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      // 3. Chama a automação diretamente
+      // Nota: O delay de segurança agora pode ser menor, pois o Python focará a janela
+      await AutomacaoSistema.executarLancamento(produto);
+    },
+  ),
+),
                 ]);
               }).toList(),
             ),
