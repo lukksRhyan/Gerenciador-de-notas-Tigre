@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:notas_tigre/models/nota.dart';
 import 'package:intl/intl.dart';
+import 'package:notas_tigre/widgets/child_note_detail_dialog.dart';
 
 class NoteDetailDialog extends StatelessWidget {
   final Nota nota;
@@ -70,16 +71,21 @@ class NoteDetailDialog extends StatelessWidget {
                 children: [
                   const Divider(),
                   const Text("Notas Filhas:", style: TextStyle(fontWeight: FontWeight.bold)),
-                  ...nota.notasFilhas.map((nf) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text("  • Nota: ${nf.numeroNota} (CFOP: ${nf.cfop}) - Total: ${currencyFormat.format(nf.total)}"),
-                        // Pode adicionar mais detalhes das notas filhas se necessário
-                      ],
-                    ),
-                  )),
+                  ...nota.notasFilhas.map((nf) => Card(
+      color: Colors.blue.shade50,
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      child: ListTile(
+        title: Text("Nota: ${nf.numeroNota} (CFOP: ${nf.cfop})"),
+        subtitle: Text("Total: ${currencyFormat.format(nf.total)}"),
+        trailing: const Icon(Icons.open_in_new, size: 20),
+        onTap: () {
+          showDialog(
+            context: context,
+            builder: (context) => ChildNoteDetailDialog(nota: nf),
+          );
+        },
+      ),
+    )),
                   const Divider(),
                   const Text("Valor restante:", style: TextStyle(fontWeight: FontWeight.bold)),
                   Text("  • Total: ${currencyFormat.format(nota.totalRestante)}"),
