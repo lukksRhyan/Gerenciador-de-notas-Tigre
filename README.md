@@ -37,6 +37,8 @@ Após a instalação defina a pasta de xmls e de notas(já importadas do xml) na
 </p>
 <img width="1187" height="639" alt="image" src="https://github.com/user-attachments/assets/3203f81d-e3b2-4314-8929-03b2b5ba2144" />
 
+Painel de adição automática de produtos à entrada de notas (Resulth Business)
+<img width="833" height="718" alt="image" src="https://github.com/user-attachments/assets/452bbfb6-fe13-4313-a69a-9723c8e71c18" />
 
 
 
